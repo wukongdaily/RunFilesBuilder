@@ -114,7 +114,7 @@ jobs:
         uses: softprops/action-gh-release@v2.1.0
         with:
           tag_name: autobuild
-          name: "PassWall-${{ env.LATEST_TAG }}"
+          name: "RELEASE-${{ env.RELEASE_NAME }}"
           files: makeself/passwall_*.run
           token: ${{ secrets.GITHUB_TOKEN }}
         env:
