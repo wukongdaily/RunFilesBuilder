@@ -27,7 +27,7 @@ jobs:
         run: |
           git clone https://github.com/megastep/makeself.git
 
-      - name: Create directories for x86_64 and a53 and set PACKAGE_VERSION
+      - name: Create directories for x86_64 和 a53 和 set PACKAGE_VERSION
         run: |
           mkdir -p x86_64/depends a53/depends
           package_version="${{ github.event.inputs.package_version }}"
@@ -37,7 +37,7 @@ jobs:
           echo "PACKAGE_VERSION=$package_version" >> $GITHUB_ENV
          
 
-      - name: Download ipk files for x86_64 and a53
+      - name: Download ipk files for x86_64 和 a53
         run: |
           echo "Get PACKAGE_VERSION=$PACKAGE_VERSION"
           
@@ -205,7 +205,7 @@ jobs:
       - name: Upload all .run files to GitHub Release
         uses: softprops/action-gh-release@v2.1.0
         with:
-          tag_name: ${{ env.APP_VERSION }}
+          tag_name: autobuild
           name: "SSRP-${{ env.APP_VERSION }}"
           body: "![Github](https://img.shields.io/badge/SSRP.run-123456?logo=github&logoColor=fff&labelColor=blue&style=for-the-badge) [![Github](https://img.shields.io/badge/国内加速站下载-FC7C0D?logo=github&logoColor=fff&labelColor=000&style=for-the-badge)](https://wkdaily.cpolar.top/archives/1) ![GitHub Downloads (all assets, specific tag)](https://img.shields.io/github/downloads/wukongdaily/RunFilesBuilder/${{ env.APP_VERSION }}/total?style=for-the-badge&labelColor=black&color=%2325c2a0)"
           files: makeself/*.run
