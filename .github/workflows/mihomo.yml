@@ -73,6 +73,8 @@ jobs:
       - name: Check file sizes
         run: |
           ls -lh makeself/mihomo_*.run
+          release_name=$(TZ="Asia/Shanghai" date +'%Y-%m-%d %H:%M Build')
+          echo "RELEASE_NAME=$release_name" >> $GITHUB_ENV
 
       - name: Fetch latest release details
         id: fetch_release_details
