@@ -105,7 +105,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.LATEST_TAG }}
+          tag_name: autobuild
           target_commitish: ${{ github.ref_name }}
           prerelease: false
           body_path: release_notes.md
@@ -113,7 +113,7 @@ jobs:
       - name: Upload run files as release assets
         uses: softprops/action-gh-release@v2.1.0
         with:
-          tag_name: ${{ env.LATEST_TAG }}
+          tag_name: autobuild
           name: "PassWall-${{ env.LATEST_TAG }}"
           files: makeself/passwall_*.run
           token: ${{ secrets.GITHUB_TOKEN }}
