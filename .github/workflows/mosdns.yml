@@ -42,7 +42,7 @@ jobs:
           fi
 
           # 创建存放目录
-          mkdir -p mosdns_x86_64 mosdns_aarch64_cortex-a53
+          mkdir -p mosdns_x86_64 mosdns_aarch64_cortex-a76
 
           # 下载文件函数
           download_file() {
@@ -59,9 +59,9 @@ jobs:
 
           # 提取下载链接
           mosdns_x86_64=$(grep "browser_download_url" releases.txt | grep "mosdns_5" | grep "x86_64.ipk" | head -1 | awk -F '"' '{print $4}')
-          mosdns_aarch64_cortex_a53=$(grep "browser_download_url" releases.txt | grep "mosdns_5" | grep "aarch64_cortex-a53.ipk" | head -1 | awk -F '"' '{print $4}')
+          mosdns_aarch64_cortex_a76=$(grep "browser_download_url" releases.txt | grep "mosdns_5" | grep "aarch64_cortex-a76.ipk" | head -1 | awk -F '"' '{print $4}')
           v2dat_x86_64=$(grep "browser_download_url" releases.txt | grep "v2dat_" | grep "x86_64.ipk" | head -1 | awk -F '"' '{print $4}')
-          v2dat_aarch64_cortex_a53=$(grep "browser_download_url" releases.txt | grep "v2dat_" | grep "aarch64_cortex-a53.ipk" | head -1 | awk -F '"' '{print $4}')
+          v2dat_aarch64_cortex_a76=$(grep "browser_download_url" releases.txt | grep "v2dat_" | grep "aarch64_cortex-a76.ipk" | head -1 | awk -F '"' '{print $4}')
           luci_app=$(grep "browser_download_url" releases.txt | grep "luci-app-mosdns_" | head -1 | awk -F '"' '{print $4}')
           luci_i18n=$(grep "browser_download_url" releases.txt | grep "luci-i18n-mosdns-zh-cn" | head -1 | awk -F '"' '{print $4}')
           geoip=$(grep "browser_download_url" releases.txt | grep "v2ray-geoip" | head -1 | awk -F '"' '{print $4}')
@@ -69,17 +69,17 @@ jobs:
 
           # 下载文件到对应目录
           download_file "$mosdns_x86_64" "mosdns_x86_64"
-          download_file "$mosdns_aarch64_cortex_a53" "mosdns_aarch64_cortex-a53"
+          download_file "$mosdns_aarch64_cortex_a76" "mosdns_aarch64_cortex-a76"
           download_file "$v2dat_x86_64" "mosdns_x86_64"
-          download_file "$v2dat_aarch64_cortex_a53" "mosdns_aarch64_cortex-a53"
+          download_file "$v2dat_aarch64_cortex_a76" "mosdns_aarch64_cortex-a76"
           download_file "$luci_app" "mosdns_x86_64"
-          download_file "$luci_app" "mosdns_aarch64_cortex-a53"
+          download_file "$luci_app" "mosdns_aarch64_cortex-a76"
           download_file "$luci_i18n" "mosdns_x86_64"
-          download_file "$luci_i18n" "mosdns_aarch64_cortex-a53"
+          download_file "$luci_i18n" "mosdns_aarch64_cortex-a76"
           download_file "$geoip" "mosdns_x86_64"
-          download_file "$geoip" "mosdns_aarch64_cortex-a53"
+          download_file "$geoip" "mosdns_aarch64_cortex-a76"
           download_file "$geosite" "mosdns_x86_64"
-          download_file "$geosite" "mosdns_aarch64_cortex-a53"
+          download_file "$geosite" "mosdns_aarch64_cortex-a76"
 
           echo "Download completed."
 
@@ -96,19 +96,19 @@ jobs:
           opkg install *.ipk
           EOF
           chmod +x mosdns_x86_64/install.sh
-          cp mosdns_x86_64/install.sh mosdns_aarch64_cortex-a53/install.sh
+          cp mosdns_x86_64/install.sh mosdns_aarch64_cortex-a76/install.sh
           
 
       - name: Move mosdns directories to makeself
         run: |
           mv mosdns_x86_64 makeself/
-          mv mosdns_aarch64_cortex-a53 makeself/
+          mv mosdns_aarch64_cortex-a76 makeself/
 
       - name: Create self-extracting packages
         run: |
           cd makeself
           ./makeself.sh mosdns_x86_64/ mosdns_${{ env.LATEST_TAG }}_x86_64.run "by github action" ./install.sh
-          ./makeself.sh mosdns_aarch64_cortex-a53/ mosdns_${{ env.LATEST_TAG }}_aarch64_cortex-a53.run "by github action" ./install.sh
+          ./makeself.sh mosdns_aarch64_cortex-a76/ mosdns_${{ env.LATEST_TAG }}_aarch64_cortex-a76.run "by github action" ./install.sh
           
 
       - name: Check file sizes
