@@ -9,6 +9,8 @@
 name: Make nikki run files for 23.05
 
 on:
+  schedule:
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
