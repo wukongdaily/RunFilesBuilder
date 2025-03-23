@@ -37,8 +37,8 @@ jobs:
             package_version="packages-24.10"
           fi
           echo "PACKAGE_VERSION=$package_version" >> $GITHUB_ENV
-         
-
+          wget -O x86_64/depends/libopenssl3.ipk https://github.com/wukongdaily/RunFilesBuilder/releases/download/ipk/libopenssl3_3.0.16-r1_x86_64.ipk
+          wget -O a53/depends/libopenssl3.ipk https://github.com/wukongdaily/RunFilesBuilder/releases/download/ipk/libopenssl3_3.0.16-r1_aarch64_cortex-a53.ipk
       - name: Download ipk files for x86_64 and a53
         run: |
           echo "Get PACKAGE_VERSION=$PACKAGE_VERSION"
