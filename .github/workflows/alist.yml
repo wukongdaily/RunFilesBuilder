@@ -1,0 +1,118 @@
+#=================================================
+# https://github.com/wukongdaily/RunFilesBuilder
+# Description: Build RunFiles using GitHub Actions
+# Lisence: MIT
+# Author: wukongdaily
+# Blog: wkdaily.cpolar.top
+#=================================================
+
+name: Make Alist run files
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Fetch latest release tag from alist
+        id: fetch_latest_tag
+        run: |
+          latest_tag=$(curl -s https://api.github.com/repos/sbwml/luci-app-alist/releases/latest | jq -r '.tag_name')
+          echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
+          
+      - name: Clone makeself repository
+        run: git clone https://github.com/megastep/makeself.git
+
+      - name: Download latest alist files
+        run: |
+          # 创建两个独立目录
+          mkdir -p alist_x86_64 alist_aarch64_cortex-a53
+      
+          # 下载 x86_64 压缩包并解压到指定目录
+          x86_url=$(curl -s https://api.github.com/repos/sbwml/luci-app-alist/releases/latest | grep -oP '"browser_download_url":\s*".*openwrt-22.03-x86_64.tar.gz"' | cut -d '"' -f4)
+          curl -LO $x86_url
+          tar --one-top-level=alist_x86_64/openwrt-22.03-x86_64 -xvzf openwrt-22.03-x86_64.tar.gz
+          rm openwrt-22.03-x86_64.tar.gz 
+      
+          # 下载 aarch64 压缩包并解压到指定目录
+          aarch64_url=$(curl -s https://api.github.com/repos/sbwml/luci-app-alist/releases/latest | grep -oP '"browser_download_url":\s*".*openwrt-22.03-aarch64_cortex-a53.tar.gz"' | cut -d '"' -f4)
+          curl -LO $aarch64_url
+          tar --one-top-level=alist_aarch64_cortex-a53/openwrt-22.03-aarch64_cortex-a53 -xvzf openwrt-22.03-aarch64_cortex-a53.tar.gz
+          rm openwrt-22.03-aarch64_cortex-a53.tar.gz 
+  
+
+      - name: List files for aarch64_cortex-a53&x86_64
+        run: |
+          echo "打印目录 alist_x86_64/openwrt-22.03-x86_64/packages_ci"
+          ls alist_x86_64/openwrt-22.03-x86_64/packages_ci
+          mv alist_x86_64/openwrt-22.03-x86_64/packages_ci/*.ipk alist_x86_64
+          rm -rf alist_x86_64/openwrt-22.03-x86_64
+
+          echo "打印目录 alist_aarch64_cortex-a53/openwrt-22.03-aarch64_cortex-a53/packages_ci"
+          ls alist_aarch64_cortex-a53/openwrt-22.03-aarch64_cortex-a53/packages_ci 
+          mv alist_aarch64_cortex-a53/openwrt-22.03-aarch64_cortex-a53/packages_ci/*.ipk alist_aarch64_cortex-a53
+          rm -rf alist_aarch64_cortex-a53/openwrt-22.03-aarch64_cortex-a53
+        
+
+      - name: Create install.sh scripts
+        run: |
+          cat <<EOF > alist_x86_64/install.sh
+          #!/bin/sh
+          opkg update
+          if [ $? -ne 0 ]; then
+              echo "update failed。"
+              exit 1
+          fi
+          opkg install *.ipk
+          EOF
+          chmod +x alist_x86_64/install.sh
+          cp alist_x86_64/install.sh alist_aarch64_cortex-a53/install.sh
+          
+
+      - name: Move alist directories to makeself
+        run: |
+          mv alist_x86_64 makeself/
+          mv alist_aarch64_cortex-a53 makeself/
+
+      - name: Create self-extracting packages
+        run: |
+          cd makeself
+          ./makeself.sh alist_x86_64/ alist_${{ env.LATEST_TAG }}_x86_64.run "by github action" ./install.sh
+          ./makeself.sh alist_aarch64_cortex-a53/ alist_${{ env.LATEST_TAG }}_aarch64_cortex-a53.run "by github action" ./install.sh
+          
+
+      - name: Check file sizes
+        run: |
+          ls -lh makeself/alist_*.run
+
+      - name: Fetch latest release details
+        id: fetch_release_details
+        run: |
+          extra_content="![Github](https://img.shields.io/badge/alist.run-123456?logo=github&logoColor=fff&labelColor=yellow&style=for-the-badge) [![Github](https://img.shields.io/badge/国内加速站下载-FC7C0D?logo=github&logoColor=fff&labelColor=000&style=for-the-badge)](https://wkdaily.cpolar.top/archives/1) ![GitHub Downloads (all assets, specific tag)](https://img.shields.io/github/downloads/wukongdaily/RunFilesBuilder/${{ env.LATEST_TAG }}/total?style=for-the-badge&labelColor=black&color=%2325c2a0)"
+          sed -i "1i$extra_content" "${{ github.workspace }}/info.md"
+
+
+      - name: Generate new tag & release
+        uses: softprops/action-gh-release@v2.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.LATEST_TAG }}
+          target_commitish: ${{ github.ref_name }}
+          prerelease: false
+          body_path: ${{ github.workspace }}/common.md
+
+      - name: Upload run files as release assets
+        uses: softprops/action-gh-release@v2.1.0
+        with:
+          tag_name: ${{ env.LATEST_TAG }}
+          name: "alist-${{ env.LATEST_TAG }}"
+          files: makeself/alist_*.run
+          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
