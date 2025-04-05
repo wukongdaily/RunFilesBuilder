@@ -32,28 +32,19 @@ jobs:
         run: |
           mkdir -p downloads
           cd downloads
-          curl -LO $(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall/releases/latest | grep -oP '"browser_download_url":\s*".*passwall_packages_ipk_x86_64.zip"' | cut -d '"' -f 4)
           curl -LO $(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall/releases/latest | grep -oP '"browser_download_url":\s*".*passwall_packages_ipk_aarch64_cortex-a53.zip"' | cut -d '"' -f 4)
-          curl -LO $(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall/releases/latest | grep -oP '"browser_download_url":\s*".*luci-19.07.*\.ipk"' | head -1 | cut -d '"' -f 4)
-          curl -LO $(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall/releases/latest | grep -oP '"browser_download_url":\s*".*luci-19.07.*\.ipk"' | tail -1 | cut -d '"' -f 4)
-      
-      - name: Organize files for x86_64
-        run: |
-          mkdir -p passwall_x86_64/depends passwall_x86_64/main
-          unzip downloads/passwall_packages_ipk_x86_64.zip -d passwall_x86_64/depends
-          rm downloads/passwall_packages_ipk_x86_64.zip
-          cp downloads/luci-19.07*.ipk passwall_x86_64/main/
+          curl -LO $(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall/releases/latest | grep -oP '"browser_download_url":\s*".*luci-24.10.*\.ipk"' | tail -1 | cut -d '"' -f 4)
 
       - name: Organize files for aarch64_cortex-a53
         run: |
           mkdir -p passwall_aarch64/depends passwall_aarch64/main
           unzip downloads/passwall_packages_ipk_aarch64_cortex-a53.zip -d passwall_aarch64/depends
           rm downloads/passwall_packages_ipk_aarch64_cortex-a53.zip
-          cp downloads/luci-19.07*.ipk passwall_aarch64/main/
+          cp downloads/luci-24.10*.ipk passwall_aarch64/main/
 
       - name: Create install.sh scripts
         run: |
-          cat <<EOF > passwall_x86_64/install.sh
+          cat <<EOF > passwall_aarch64/install.sh
           #!/bin/sh
           opkg update
           if [ $? -ne 0 ]; then
@@ -63,18 +54,14 @@ jobs:
           opkg install depends/*.ipk
           opkg install main/*.ipk
           EOF
-          chmod +x passwall_x86_64/install.sh
-          cp passwall_x86_64/install.sh passwall_aarch64/install.sh
 
       - name: Move passwall directories to makeself
         run: |
-          mv passwall_x86_64 makeself/
           mv passwall_aarch64 makeself/
 
       - name: Create self-extracting packages
         run: |
           cd makeself
-          ./makeself.sh passwall_x86_64/ passwall_x86_64_${{ env.LATEST_TAG }}.run "by github action" ./install.sh
           ./makeself.sh passwall_aarch64/ passwall_aarch64_a53_${{ env.LATEST_TAG }}.run "by github action" ./install.sh
 
       - name: Check file sizes
