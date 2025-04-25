@@ -62,6 +62,10 @@ jobs:
               echo "update failed。"
               exit 1
           fi
+          opkg install iptables-mod-tproxy
+          opkg install iptables-mod-socket
+          opkg install iptables-mod-iprange
+          opkg install iptables-mod-conntrack-extra
           opkg install depends/*.ipk
           opkg install main/*.ipk
           EOF
