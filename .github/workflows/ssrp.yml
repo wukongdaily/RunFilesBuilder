@@ -19,15 +19,33 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04 
+    runs-on: ubuntu-22.04
+    outputs:
+      ssrp_version: ${{ steps.setver.outputs.ssrp_version }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Clone makeself repo
+        uses: actions/checkout@v3
+      
+      - name: Clone luci-app-ssr-plus
         run: |
-          git clone https://github.com/megastep/makeself.git
+          git clone --depth=1 https://github.com/kiddin9/kwrt-packages.git
+          ls kwrt-packages/luci-app-ssr-plus/
+
+      - name: Parse version from Makefile
+        id: setver
+        run: |
+          cd kwrt-packages/luci-app-ssr-plus
+
+          ver=$(grep -E '^PKG_VERSION:=' Makefile | cut -d= -f2 | tr -d ' ')
+          rel=$(grep -E '^PKG_RELEASE:=' Makefile | cut -d= -f2 | tr -d ' ')
+
+          fullver="${ver}-r${rel}"
+          echo "ssrp_version=$fullver" >> $GITHUB_ENV
+    
+
+      - name: Show version
+        run: echo "版本号是：${ssrp_version}"
 
       - name: Create directories for x86_64 and a53 and set PACKAGE_VERSION
         run: |
@@ -180,36 +198,44 @@ jobs:
           ls -lh x86_64/depends/
           echo "List a53 depends ipk files"
           ls -lh a53/depends/
-          mv x86_64/depends/luci-app-ssr-plus*.ipk x86_64
-          mv a53/depends/luci-app-ssr-plus*.ipk a53
+          mv x86_64/depends/luci-app-ssr-plus*.ipk x86_64/
+          mv a53/depends/luci-app-ssr-plus*.ipk a53/
+          echo "查看a53目录"
+          ls a53/
+          echo "查看x86_64目录"
+          ls x86_64/
       
       - name: Create install.sh 
         run: |
             echo -e "#!/bin/sh\n\nopkg update\nif [ \$? -ne 0 ]; then\n    echo \"update failed\"\n    exit 1\nfi\nopkg install depends/*.ipk --force-depends\nopkg install *.ipk --force-depends" > x86_64/install.sh
             chmod +x x86_64/install.sh
             cp x86_64/install.sh a53/
-  
+
+      - name: Clone makeself repo
+        run: |
+          git clone https://github.com/megastep/makeself.git
+
+      - name: Change Dir
+        run: |
+            mv -f x86_64/ makeself/
+            mv -f a53/ makeself/
+            echo "移动后再查看makeself/的文件"
+            ls -lah makeself/
+
+      
       - name: Create self-extracting archives
         run: |
-            mv -f x86_64 makeself
-            mv -f a53 makeself
             cd makeself
-            ipk_file=$(ls x86_64/*.ipk)
-            appversion=$(basename "$ipk_file" | grep -oP '\d+\.\d+\.\d+')
-            echo "APP_VERSION=$appversion" >> $GITHUB_ENV
-            release_name=$(TZ="Asia/Shanghai" date +'%Y-%m-%d %H:%M Build')
-            echo "RELEASE_NAME=$release_name" >> $GITHUB_ENV
-            ./makeself.sh x86_64/ ssrp_x86_64_$appversion.run "by github action" ./install.sh
-            ./makeself.sh a53/ ssrp_aarch64_cortex-a53_$appversion.run "by github action" ./install.sh
-            
-            
+            ./makeself.sh x86_64/ ssrp_x86_64-${ssrp_version}.run "by github action" ./install.sh
+            ./makeself.sh a53/ ssrp_aarch64_cortex-a53-${ssrp_version}.run "by github action" ./install.sh
+                
       
       - name: Upload all .run files to GitHub Release
         uses: softprops/action-gh-release@v2.1.0
         with:
-          tag_name: ${{ env.APP_VERSION }}
-          name: "SSRP-${{ env.APP_VERSION }}"
-          body: "![Github](https://img.shields.io/badge/SSRP.run-123456?logo=github&logoColor=fff&labelColor=blue&style=for-the-badge) [![Github](https://img.shields.io/badge/国内加速站下载-FC7C0D?logo=github&logoColor=fff&labelColor=000&style=for-the-badge)](https://wkdaily.cpolar.top/archives/1) ![GitHub Downloads (all assets, specific tag)](https://img.shields.io/github/downloads/wukongdaily/RunFilesBuilder/${{ env.APP_VERSION }}/total?style=for-the-badge&labelColor=black&color=%2325c2a0)"
+          tag_name: "ShadowsocksPlus+"
+          name: SSRP-${{ env.ssrp_version }}
+          body: "![Github](https://img.shields.io/badge/SSRP.run-123456?logo=github&logoColor=fff&labelColor=blue&style=for-the-badge) [![Github](https://img.shields.io/badge/国内加速站下载-FC7C0D?logo=github&logoColor=fff&labelColor=000&style=for-the-badge)](https://wkdaily.cpolar.top/archives/1) ![GitHub Downloads (all assets, specific tag)](https://img.shields.io/github/downloads/wukongdaily/RunFilesBuilder/ShadowsocksPlus%2B/total?style=for-the-badge&labelColor=black&color=%2325c2a0)"
           files: makeself/*.run
           token: ${{ secrets.GITHUB_TOKEN }}
         env:
