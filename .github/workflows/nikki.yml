@@ -44,6 +44,38 @@ jobs:
           mkdir nikki_x86_64 nikki_aarch64_cortex-a53
           cp nikki_x86_64-openwrt-24.10/*.ipk nikki_x86_64/
           cp nikki_aarch64_cortex-a53-openwrt-24.10/*.ipk nikki_aarch64_cortex-a53/
+          # 保存当前路径并进入目标目录
+          pushd "nikki_x86_64" >/dev/null || exit 1
+          for file in *~*.ipk; do
+          [ -e "$file" ] || continue
+          # 构造新文件名，去除 ~ 字符
+          new_file="$(echo "$file" | tr -d '~')"
+          # 如果目标文件名已存在，则提示并跳过
+          if [ -e "$new_file" ]; then
+          echo "目标文件已存在，跳过: $new_file"
+          continue
+          fi
+          # 重命名文件
+          mv "$file" "$new_file"
+          echo "已重命名: $file -> $new_file"
+          done
+          popd >/dev/null
+
+          pushd "nikki_aarch64_cortex-a53" >/dev/null || exit 1
+          for file in *~*.ipk; do
+          [ -e "$file" ] || continue
+          # 构造新文件名，去除 ~ 字符
+          new_file="$(echo "$file" | tr -d '~')"
+          # 如果目标文件名已存在，则提示并跳过
+          if [ -e "$new_file" ]; then
+          echo "目标文件已存在，跳过: $new_file"
+          continue
+          fi
+          # 重命名文件
+          mv "$file" "$new_file"
+          echo "已重命名: $file -> $new_file"
+          done
+          popd >/dev/null
           
 
       - name: Create install.sh scripts
