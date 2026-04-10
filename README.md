@@ -13,7 +13,7 @@
 ![Github](https://img.shields.io/badge/DUFS文件服务器.run-123456?logo=github&logoColor=fff&labelColor=00ae9d&style=for-the-badge)
 ![Github](https://img.shields.io/badge/OPENLIST2.run-123456?logo=github&logoColor=000&labelColor=ffff00&style=for-the-badge)
 # RunFilesBuilder 
-<img src="https://img.shields.io/github/downloads/wukongdaily/RunFilesBuilder/total.svg?style=for-the-badge&color=32C955"/>  [![GitHub Release](https://img.shields.io/github/v/release/wukongdaily/RunFilesBuilder?style=for-the-badge&logoColor=green&color=%23E1A8CD)](https://github.com/wukongdaily/RunFilesBuilder/releases)
+
 
 # [每日构建 DailyBuild] 👇🏻 [【点此处讨论】](https://github.com/wukongdaily/RunFilesBuilder/discussions/41)
 https://github.com/wkccd/CloudRunFilesBuilder/releases
