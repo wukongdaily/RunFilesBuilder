@@ -1,0 +1,148 @@
+#=================================================
+# honk（OpenWrt 25.12 / apk）→ 自解压 .run
+#
+# 与 25-openwrt-daede.yml 同一套骨架，差异只在数据来源：
+#   daede：curl GitHub Release API → jq 解析 → 下载（kenzok8/openwrt-daede）
+#   honk ：feed 没有 GitHub Release 产物，apk 只在 daeuniverse apk 源里；
+#          该源开了目录浏览，直接抓目录 HTML 拿文件名，版本自动跟随上游。
+#
+# 实测（2026-11-02）三个架构各 5 个包、共 15 个：
+#   honk-0.1.0_beta4-r3.apk                     16.2 MB / 15.5 MB / 15.5 MB
+#   luci-app-honk-26.303.60580~1046d3c.apk       2734 B（三架构同）
+#   luci-lib-daeuniverse-26.303.64947~503cdb1.apk 10646 B
+#   luci-i18n-daeuniverse-zh-cn-26.303...apk     2319 B
+#   vmlinux-btf-builtin-1-r1.apk                  972 B（只做 BTF 哨兵检查）
+#=================================================
+
+name: Build 25.12 openwrt-honk
+
+on:
+  workflow_dispatch:
+    inputs:
+      feed:
+        description: 'apk 源根地址（末尾不带斜杠）'
+        required: false
+        default: 'https://openwrt.daeuniverse.org/25.12/packages'
+      tag_name:
+        description: 'Release tag（留空 = honk-当天日期）'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Clone makeself repository
+        run: git clone --depth 1 https://github.com/megastep/makeself.git
+
+      - name: Parse apk filenames from feed
+        id: parse
+        env:
+          FEED: ${{ inputs.feed }}
+        run: bash shell/parse_honk_assets.sh
+
+      - name: Download apk files
+        run: bash shell/download_honk_apks.sh
+
+      - name: Create install.sh scripts
+        run: |
+          cat > x86/install.sh <<'INSTALL_EOF'
+          #!/bin/sh
+          set -e
+          echo "==> honk 安装器（OpenWrt 25.12 / apk）"
+
+          apk update || { echo "❌ apk update 失败，检查网络或源"; exit 1; }
+
+          if [ ! -e /sys/kernel/btf/vmlinux ]; then
+              echo ""
+              echo "⚠️  内核没有 /sys/kernel/btf/vmlinux"
+              echo "    honk 的 eBPF 程序要求 Linux >= 6.12 且 CONFIG_DEBUG_INFO_BTF=y"
+              echo "    继续安装，但 honk-core 大概率起不来"
+              echo ""
+          fi
+
+          echo "==> apk add --allow-untrusted *.apk"
+          apk add --allow-untrusted *.apk
+
+          echo ""
+          echo "✅ 已安装：honk / luci-app-honk / luci-lib-daeuniverse / 中文包 / vmlinux-btf-builtin"
+          echo ""
+          echo "默认不启动。启用方式："
+          echo "  uci set honk.config.enabled=1"
+          echo "  uci commit honk"
+          echo "  /etc/init.d/honk enable && /etc/init.d/honk start"
+          echo ""
+          echo "LuCI 入口：服务 → Honk（面板端口 9527）"
+          INSTALL_EOF
+          chmod +x x86/install.sh
+          cp x86/install.sh arm64/install.sh
+          cp x86/install.sh arm64-a53/install.sh
+
+      - name: Move directories to makeself
+        run: |
+          mv x86 makeself/
+          mv arm64 makeself/
+          mv arm64-a53 makeself/
+
+      - name: Create self-extracting packages
+        run: |
+          cd makeself
+          ./makeself.sh x86/ "25-openwrt-honk-${VERSION}-x86_64.run" "honk ${VERSION} for OpenWrt 25.12" ./install.sh
+          ./makeself.sh arm64/ "25-openwrt-honk-${VERSION}-aarch64_generic.run" "honk ${VERSION} for OpenWrt 25.12" ./install.sh
+          ./makeself.sh arm64-a53/ "25-openwrt-honk-${VERSION}-aarch64_cortex-a53.run" "honk ${VERSION} for OpenWrt 25.12" ./install.sh
+
+      - name: Check file sizes
+        run: ls -lh makeself/*.run
+
+      - name: Set release tag and name
+        id: vars
+        env:
+          IN_TAG: ${{ inputs.tag_name }}
+        run: |
+          if [ -n "$IN_TAG" ]; then
+              TAG="$IN_TAG"
+          else
+              TAG="honk-$(date -u -d '+8 hour' +'%Y-%m-%d')"
+          fi
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "RELEASE_NAME=honk ${VERSION} · $(TZ=Asia/Shanghai date +'%Y-%m-%d %H:%M')" >> $GITHUB_ENV
+          echo "tag=$TAG"
+
+      - name: Upload run files as release assets
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.TAG }}
+          name: ${{ env.RELEASE_NAME }}
+          files: makeself/*.run
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            **honk ${{ env.VERSION }}** — OpenWrt 25.12 自解压安装包
+
+            | 包 | 说明 |
+            |---|---|
+            | honk | eBPF 透明代理引擎（dae 的独立实现） |
+            | luci-app-honk | LuCI 界面（服务 → Honk） |
+            | luci-lib-daeuniverse | LuCI 依赖库 |
+            | luci-i18n-daeuniverse-zh-cn | 中文翻译 |
+            | vmlinux-btf-builtin | BTF 哨兵（1 B，装前检查 `/sys/kernel/btf/vmlinux`） |
+
+            **要求**：Linux >= 6.12 且 `CONFIG_DEBUG_INFO_BTF=y`
+
+            **用法**
+            ```sh
+            chmod +x 25-openwrt-honk-*-x86_64.run
+            ./25-openwrt-honk-*-x86_64.run
+            ```
+            装完默认不启动，到 LuCI「服务 → Honk」开关，或：
+            ```sh
+            uci set honk.config.enabled=1 && uci commit honk
+            /etc/init.d/honk enable && /etc/init.d/honk start
+            ```
+
+            > honk 与 dae/daed **互斥**（都占用 `dae0` 设备与 `daens` 命名空间），同机只能留一个。
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
