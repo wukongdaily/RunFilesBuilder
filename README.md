@@ -15,8 +15,8 @@
 # RunFilesBuilder 
 
 
-# [每日构建 DailyBuild] 👇🏻 [【点此处讨论】](https://github.com/wukongdaily/RunFilesBuilder/discussions/41)
-https://github.com/wkccd/CloudRunFilesBuilder/releases
+# [不定期构建 DailyBuild] 👇🏻 [【点此处讨论】](https://github.com/wukongdaily/RunFilesBuilder/discussions/41)
+ https://github.com/wkccd/dailybuild/releases
 
 【[ENGLISH](https://github.com/wukongdaily/RunFilesBuilder/blob/master/README_en.md)】
 
